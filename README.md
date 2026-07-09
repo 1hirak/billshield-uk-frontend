@@ -151,14 +151,6 @@ VITE_API_BASE_URL=http://32.199.166.215:8000/api/v1
 ```
 
 Override via `.env.local` for local development.
-
-## Deploy to bolt.new
-
-1. Connect this GitHub repo
-2. Build command: `npm run build`
-3. Output directory: `dist`
-4. App connects to EC2 backend at `http://32.199.166.215:8000/api/v1`
-
 ## Backend
 
 FastAPI backend: [billshield-uk-backend](https://github.com/1hirak/billshield-uk-backend)
