@@ -1,0 +1,168 @@
+# BillShield UK — Frontend
+
+React + TypeScript single-page application that helps UK households under cost-of-living pressure understand their bills, identify savings, find support, and build a 30-day survival plan.
+
+---
+
+## Architecture Overview
+
+```
+src/
+├── api/
+│   ├── client.ts        # fetch wrapper (JSON + multipart)
+│   ├── endpoints.ts     # 15 API endpoint functions
+│   └── types.ts         # TypeScript interfaces for all API shapes
+├── pages/               # 9 route-level page components
+│   ├── LandingPage.tsx
+│   ├── OnboardingPage.tsx        (3-step wizard with validation)
+│   ├── BillUploadPage.tsx        (drag-drop + skip-to-demo button)
+│   ├── BillReviewPage.tsx        (editable extraction + confidence badges)
+│   ├── DashboardPage.tsx         (summary cards + chart + top-3 actions)
+│   ├── ScenarioSimulatorPage.tsx (sliders + toggles + bar chart)
+│   ├── SupportMapPage.tsx        (postcode search + 7 filters + Google Maps)
+│   ├── ThirtyDayPlanPage.tsx     (week-by-week checklist)
+│   └── SettingsPage.tsx          (edit profile + delete data)
+├── components/
+│   ├── layout/AppLayout.tsx      (desktop sidebar + mobile drawer + mode toggle)
+│   ├── dashboard/                (SummaryCard, PressureChart, BillBreakdownCard)
+│   ├── recommendations/RecommendationCard.tsx (expandable action card)
+│   ├── ErrorBoundary.tsx         (React error boundary)
+│   ├── mode-toggle.tsx           (dark/light/system theme toggle)
+│   ├── theme-provider.tsx        (custom ThemeProvider)
+│   └── ui/                       (52 shadcn/ui primitives)
+├── hooks/                        (useMobile)
+├── lib/utils.ts                  (cn() CSS utility)
+├── utils/
+│   ├── formatters.ts             (formatCurrency, formatPence, formatKwh, etc.)
+│   ├── badgeStyles.ts            (confidence/effort/urgency/safety/saving badges)
+│   └── storage.ts                (localStorage helpers for householdId/billId)
+├── main.tsx                      (entry point)
+├── App.tsx                       (BrowserRouter + routes)
+└── index.css                     (Tailwind v4 + shadcn theme tokens)
+```
+
+---
+
+## Routes & API Endpoints
+
+| Path | Page | Key API Call |
+|------|------|-------------|
+| `/` | LandingPage | `POST /dev/seed` (demo) |
+| `/onboarding` | OnboardingPage | `POST /households` |
+| `/upload` | BillUploadPage | `POST /bills/upload` (multipart) |
+| `/review/:billId` | BillReviewPage | `GET /bills/{id}` → `PATCH /bills/{id}/confirm` |
+| `/dashboard` | DashboardPage | `GET /dashboard/{householdId}` |
+| `/scenarios` | ScenarioSimulatorPage | `POST /scenarios/simulate` |
+| `/support` | SupportMapPage | `GET /support-services?postcode=&filters=...` |
+| `/plan` | ThirtyDayPlanPage | `POST /plans/30-day` |
+| `/settings` | SettingsPage | `GET /households/{id}` → `PATCH /households/{id}` |
+
+---
+
+## Data Flow
+
+```
+Browser (localStorage)
+  ├── householdId → persisted after onboarding
+  ├── billId → persisted after upload
+  └── Pages read from storage, pass to API client
+
+API Client (fetch)
+  ├── request<T>() → JSON requests
+  └── uploadRequest<T>() → FormData requests (multipart)
+
+User Flow
+  1. Landing → Onboarding (3-step wizard + form validation)
+  2. Bill Upload → Review (confidence badges + editable fields)
+  3. Dashboard (summary cards + pressure forecast chart + top-3 ranked actions)
+  4. Scenario Simulator (sliders + toggles with instant frontend computation)
+  5. Support Map (25-33 mock services per postcode + Google Maps directions)
+  6. 30-Day Plan (this-week / next-2-weeks / by-day-30 checklist)
+  7. Settings (profile update + data deletion)
+```
+
+---
+
+## Key Frontend Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| **No auth** | MVP — householdId in localStorage is sufficient |
+| **Direct API calls** | Backend has CORS wildcard (`*`) — frontend hosted anywhere |
+| **Appliance slider frontend-only** | Instant £1-£3/mo computation, no API call needed |
+| **Skip-to-demo button** | Creates a mock PDF blob, uploads + auto-confirms — full dashboard in one click |
+| **Heating safety guardrails** | Vulnerable households get safety warnings instead of heating savings |
+| **Recharts** | ComposedChart for pressure forecast, BarChart for scenario breakdown |
+| **shadcn/ui** | 52 accessible primitives with Tailwind v4 |
+| **ThemeProvider** | Dark/light/system with keyboard shortcut (`D` key) |
+| **Sonner** | Toast notifications for success/error feedback |
+
+---
+
+## Saving Label Badges
+
+| Label | Color | Meaning |
+|-------|-------|---------|
+| `estimated_saving` | Green | Calculated from bill data |
+| `potential_saving` | Amber | Depends on eligibility |
+| `cashflow_improvement` | Blue | Frees up monthly cash |
+| `support_value` | Purple | Grant or benefit |
+| `green_only` | Emerald | May reduce carbon, not bills |
+| `risk_reduction` | Red | Reduces risk of debt |
+| `billing_accuracy` | Blue | Ensures correct billing |
+| `support_access` | Purple | Access to local services |
+| `planning` | Slate | Budgeting step |
+| `no_direct_saving` | Slate | No financial benefit |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | React 19.2 |
+| Language | TypeScript 5.9 |
+| Build tool | Vite 7.3 |
+| Routing | React Router 6.30 |
+| Charts | Recharts 3.8 |
+| Styling | Tailwind CSS 4.2 |
+| UI Primitives | shadcn/ui (Radix) |
+| Icons | Lucide React |
+| Toasts | Sonner |
+| Testing | Vitest 3.1 + React Testing Library 16 (95 tests) |
+| E2E Tests | Playwright (18 tests, separate repo) |
+
+---
+
+## Setup
+
+```bash
+npm install
+npm run dev       # http://localhost:5173
+npm run build     # production build → dist/
+npm test          # 95 vitest tests
+npm run typecheck # TypeScript validation
+```
+
+## Environment
+
+```env
+VITE_API_BASE_URL=http://32.199.166.215:8000/api/v1
+```
+
+Override via `.env.local` for local development.
+
+## Deploy to bolt.new
+
+1. Connect this GitHub repo
+2. Build command: `npm run build`
+3. Output directory: `dist`
+4. App connects to EC2 backend at `http://32.199.166.215:8000/api/v1`
+
+## Backend
+
+FastAPI backend: [billshield-uk-backend](https://github.com/1hirak/billshield-uk-backend)
+
+Deployed at: `http://32.199.166.215:8000`  
+API docs: `http://32.199.166.215:8000/docs`  
+CORS: allows all origins (wildcard `*`)
