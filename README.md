@@ -134,6 +134,106 @@ User Flow
 
 ---
 
+## Component State Diagram
+
+```
+LandingPage
+  └── loading: boolean          Demo button spinner
+
+OnboardingPage
+  ├── step: 1 | 2 | 3           Wizard step
+  ├── form: HouseholdPayload     All 20 onboarding fields
+  ├── stepError: string|null     Inline validation
+  ├── loading/error              Submit state
+  └── COST_FIELDS, ELIGIBILITY_FIELDS  Form templates
+
+BillUploadPage
+  ├── file: File|null            Selected file
+  ├── dragOver: boolean          Drop zone highlight
+  ├── loading: boolean           Upload in progress
+  ├── skipping: boolean          Skip-to-demo in progress
+  └── error: string|null         Validation/API errors
+
+BillReviewPage
+  ├── extraction: BillExtraction Fetched from API
+  ├── edited fields (local)     User corrections before confirm
+  └── confidence badges          high/medium/needs_review per field
+
+DashboardPage
+  ├── data: DashboardData|null   Full API response
+  ├── loading: boolean           Initial fetch
+  └── error: string|null         Retry-able error banner
+  (no bill → EmptyState card)
+  (bill present → 4 SummaryCards + PressureChart + BillBreakdownCard
+                 + top-3 RecommendationCards + Insights)
+
+ScenarioSimulatorPage
+  ├── heating: 0-2              Slider (frontend-only render)
+  ├── appliance: 0-30%          Slider (frontend compute: appliance × 0.10)
+  ├── offPeak, ddReview,       6 toggles (backend API)
+  │   councilTax, broadband,
+  │   water, paymentDate
+  ├── result: ScenarioResult    Backend API response
+  ├── displayResult (useMemo)   Merges appliance + backend result
+  ├── loading: boolean          500ms debounce
+  └── error: string|null
+
+SupportMapPage
+  ├── postcode: string          From household / manual input
+  ├── filters: string[]         7 checkbox toggles
+  ├── data: SupportServicesResponse  25-33 services
+  ├── loading/error, emptyState
+  └── pin grid (click-to-scroll)
+
+ThirtyDayPlanPage
+  ├── plan: ThirtyDayPlan       API response
+  ├── completedItems: Set       Local checkbox state (not persisted)
+  ├── loading/error
+  └── download/copy actions
+
+SettingsPage
+  ├── household: Household      Fetched on mount
+  ├── form: edit fields         energyProvider + 6 costs
+  ├── notification toggles      Local state only
+  └── delete: billId            Soft-delete + localStorage clear
+
+AppLayout
+  ├── mobileOpen: boolean       Slide-out drawer
+  ├── location: useLocation     Hides sidebar on landing page (/)
+  └── ModeToggle                Dark/light/system theme
+
+ErrorBoundary
+  ├── hasError: boolean         Catches unhandled errors
+  └── error: Error|null         Displays friendly fallback + retry
+```
+
+---
+
+## Performance Metrics
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| JS bundle (gzipped) | ~200 KB | 807 KB uncompressed, gzip via nginx |
+| CSS bundle (gzipped) | ~30 KB | 131 KB uncompressed |
+| First Contentful Paint | ~170 ms | HTML + CSS inline, no blocking JS |
+| JS download (gzip) | ~220 ms | On typical broadband connection |
+| Return visits | ~0 ms | `Cache-Control: immutable, max-age=31536000` (1 year) |
+| Dashboard API call | ~300 ms | 12 engines run synchronously (~30ms each) |
+| Scenario simulator | ~180 ms | Pure toggle logic, no heavy compute |
+| Support services | ~180 ms | 25-33 in-memory mock entries |
+| Health check | ~170 ms | No DB or engine execution |
+| Appliance slider | **0 ms** | Frontend-only compute: `appliance × 0.10` |
+| Scenario debounce | 500 ms | Prevents excessive API calls while adjusting |
+| Loading skeleton | Instant | Pure CSS `animate-pulse`, zero JS |
+| CORS overhead | 0 ms | Backend has wildcard `*` — no preflight issues |
+| EC2 memory | 908 MB total | ~400 MB free, 2 GB swap configured |
+| EC2 CPU | 2 vCPUs | Uvicorn 2 workers |
+| SQLite | WAL mode | Journal mode + `synchronous=NORMAL` for Docker |
+| Tests | 95 unit + 18 E2E | Vitest ~1.3s, Playwright ~2.6s |
+| TypeScript | 0 errors | Strict mode, no unused locals |
+
+---
+
 ## Setup
 
 ```bash
