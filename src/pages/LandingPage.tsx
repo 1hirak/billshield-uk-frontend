@@ -311,7 +311,7 @@ export default function LandingPage() {
                 variant="outline"
                 onClick={handleDemo}
                 disabled={loading}
-                className="border-background/30 text-background hover:bg-background/10 hover:text-background w-full sm:w-auto"
+                className="bg-transparent border-background/30 text-background hover:bg-background/10 hover:text-background w-full sm:w-auto"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 View demo dashboard
